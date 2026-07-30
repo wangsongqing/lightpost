@@ -1,0 +1,197 @@
+:root {
+  --bg-primary: #1e1e2e;
+  --bg-secondary: #181825;
+  --bg-tertiary: #11111b;
+  --bg-input: #313244;
+  --bg-hover: #45475a;
+  --bg-active: #585b70;
+  --text-primary: #cdd6f4;
+  --text-secondary: #a6adc8;
+  --text-muted: #6c7086;
+  --border: #45475a;
+  --accent: #89b4fa;
+  --accent-hover: #74c7ec;
+  --success: #a6e3a1;
+  --warning: #f9e2af;
+  --error: #f38ba8;
+  --info: #89dceb;
+  --method-get: #a6e3a1;
+  --method-post: #f9e2af;
+  --method-put: #89b4fa;
+  --method-delete: #f38ba8;
+  --method-patch: #cba6f7;
+  --method-head: #94e2d5;
+  --method-options: #74c7ec;
+  --radius: 6px;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', Menlo, monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--bg-hover);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--bg-active);
+}
+
+input, textarea, select, button {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+input, textarea, select {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 6px 10px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: var(--accent);
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  border-radius: var(--radius);
+  padding: 6px 14px;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  transition: all 0.15s;
+}
+
+button:hover {
+  background: var(--bg-hover);
+}
+
+button:active {
+  background: var(--bg-active);
+}
+
+button.primary {
+  background: var(--accent);
+  color: var(--bg-primary);
+  font-weight: 600;
+}
+
+button.primary:hover {
+  background: var(--accent-hover);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+textarea {
+  resize: none;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+/* Tab styles */
+.tab-bar {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.tab {
+  padding: 8px 16px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  color: var(--text-secondary);
+  transition: all 0.15s;
+  user-select: none;
+}
+
+.tab:hover {
+  color: var(--text-primary);
+}
+
+.tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+/* Method badge colors */
+.method-badge {
+  font-weight: 700;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+
+.method-badge.GET { color: var(--method-get); }
+.method-badge.POST { color: var(--method-post); }
+.method-badge.PUT { color: var(--method-put); }
+.method-badge.DELETE { color: var(--method-delete); }
+.method-badge.PATCH { color: var(--method-patch); }
+.method-badge.HEAD { color: var(--method-head); }
+.method-badge.OPTIONS { color: var(--method-options); }
+
+/* JSON syntax highlighting */
+.json-key { color: #f38ba8; }
+.json-string { color: #a6e3a1; }
+.json-number { color: #fab387; }
+.json-boolean { color: #89b4fa; }
+.json-null { color: #6c7086; }
+
+/* Animations */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+  animation: fadeIn 0.2s ease-out;
+}
