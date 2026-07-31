@@ -30,9 +30,9 @@ function ContextMenu({
   const menuRef = useRef<HTMLDivElement>(null);
   const [confirmDelete, setConfirmDelete] = useState<CollectionItem | null>(null);
 
-  // 点击外部关闭
+  // 点击外部关闭（删除确认弹窗显示时不绑定，避免弹窗被立即销毁）
   useEffect(() => {
-    if (!state.visible) return;
+    if (!state.visible || confirmDelete) return;
     const handleMouseDown = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         onClose();
@@ -46,9 +46,10 @@ function ContextMenu({
       clearTimeout(timer);
       document.removeEventListener('mousedown', handleMouseDown);
     };
-  }, [state.visible, onClose]);
+  }, [state.visible, onClose, confirmDelete]);
 
-  if (!state.visible) return null;
+  // 确认删除弹窗显示时，组件仍需渲染（但隐藏菜单）
+  if (!state.visible && !confirmDelete) return null;
 
   const isFolder = state.target?.item_type === 'folder';
   const parentId = state.target?.id || null;
@@ -83,7 +84,8 @@ function ContextMenu({
 
   return (
     <>
-      {/* 主菜单 */}
+      {/* 主菜单（确认删除时隐藏，但组件保持渲染以显示弹窗） */}
+      {!confirmDelete && (
       <div className="context-menu" ref={menuRef} style={style}>
         {/* 文件夹可添加子项 */}
         {isFolder && (
@@ -162,6 +164,7 @@ function ContextMenu({
           </>
         )}
       </div>
+      )}
 
       {/* 删除确认弹窗 */}
       {confirmDelete && (
