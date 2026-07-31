@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useStore } from '../stores/useStore';
+import { useActiveRequest } from '../stores/useActiveRequest';
 import { formatBytes, formatJson, getStatusColor } from '../utils/request';
 import type { ResponseData } from '../types';
 
@@ -18,7 +19,9 @@ function highlightJson(json: string): string {
 }
 
 export function ResponseViewer() {
-  const { response, loading } = useStore();
+  const activeReqTab = useActiveRequest();
+  const response = activeReqTab?.response ?? null;
+  const loading = activeReqTab?.loading ?? false;
   const [activeTab, setActiveTab] = useState<ResponseTab>('body');
   const [bodyView, setBodyView] = useState<'pretty' | 'raw'>('pretty');
 

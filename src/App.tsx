@@ -5,6 +5,7 @@ import { UrlBar } from './components/UrlBar';
 import { EnvironmentPanel } from './components/EnvironmentPanel';
 import { HistorySidebar } from './components/HistorySidebar';
 import { CollectionTree } from './components/CollectionTree';
+import { RequestTabs } from './components/RequestTabs';
 import { useStore } from './stores/useStore';
 import './styles/app.css';
 import './styles/collection.css';
@@ -105,8 +106,9 @@ function App() {
           onMouseDown={handleMouseDown}
         />
 
-        {/* Right side: URL bar on top, then request/response split */}
+        {/* Right side: tabs on top, then URL bar, then request/response split */}
         <div className="content-area">
+          <RequestTabs />
           <UrlBar />
           <div className="panes-row">
             <div className="pane request-pane">

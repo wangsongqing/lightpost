@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useStore } from '../stores/useStore';
-import type { BodyType, KeyValuePair } from '../types';
+import { useActiveRequest } from '../stores/useActiveRequest';
+import type { BodyType, KeyValuePair, RequestData } from '../types';
 import { KeyValueEditor } from './KeyValueEditor';
 
 const BODY_TYPES: { value: BodyType; label: string }[] = [
@@ -11,8 +12,19 @@ const BODY_TYPES: { value: BodyType; label: string }[] = [
   { value: 'raw', label: 'Raw' },
 ];
 
+const emptyRequest: RequestData = {
+  method: 'GET',
+  url: '',
+  params: [],
+  headers: [],
+  bodyType: 'none',
+  bodyContent: '',
+};
+
 export function RequestBuilder() {
-  const { request, setRequest } = useStore();
+  const activeReqTab = useActiveRequest();
+  const request: RequestData = activeReqTab?.request ?? emptyRequest;
+  const { setRequest } = useStore();
   const [activeTab, setActiveTab] = useState<'params' | 'headers' | 'body'>('headers');
 
   const updateParams = (params: KeyValuePair[]) => setRequest({ params });

@@ -1,45 +1,27 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useStore, useCollectionStore } from '../stores/useStore';
+import { useActiveRequest } from '../stores/useActiveRequest';
 import { sendRequest, generateId } from '../utils/request';
-import type { HttpMethod } from '../types';
+import type { HttpMethod, RequestData } from '../types';
 
 const HTTP_METHODS: HttpMethod[] = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS'];
 
+const emptyRequest: RequestData = {
+  method: 'GET',
+  url: '',
+  params: [],
+  headers: [],
+  bodyType: 'none',
+  bodyContent: '',
+};
+
 export function UrlBar() {
-  const { request, setRequest, setResponse, setLoading, loading, environments, activeEnvId, addHistory } = useStore();
+  const activeTab = useActiveRequest();
+  const request: RequestData = activeTab?.request ?? emptyRequest;
+  const loading = activeTab?.loading ?? false;
+  const { setRequest, setResponse, setLoading, environments, activeEnvId, addHistory } = useStore();
   const { activeItemId, saveCurrentRequest } = useCollectionStore();
   const [saving, setSaving] = useState(false);
-
-  const handleSave = useCallback(async () => {
-    if (!activeItemId) return;
-    setSaving(true);
-    try {
-      await saveCurrentRequest();
-    } finally {
-      setSaving(false);
-    }
-  }, [activeItemId, saveCurrentRequest]);
-
-  const handleSaveKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 's') {
-        e.preventDefault();
-        handleSave();
-      }
-    },
-    [handleSave],
-  );
-
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
-        e.preventDefault();
-        handleSend();
-      }
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
-  );
 
   const activeEnv = environments.find((e) => e.id === activeEnvId);
 
@@ -78,8 +60,35 @@ export function UrlBar() {
     }
   }, [request, activeEnv, setLoading, setResponse, addHistory]);
 
+  const handleSave = useCallback(async () => {
+    if (!activeItemId) return;
+    setSaving(true);
+    try {
+      await saveCurrentRequest();
+    } finally {
+      setSaving(false);
+    }
+  }, [activeItemId, saveCurrentRequest]);
+
+  // 全局快捷键：Ctrl+S / Cmd+S 保存，Ctrl+Enter / Cmd+Enter 发送
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+        e.preventDefault();
+        handleSave();
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+        e.preventDefault();
+        handleSend();
+      }
+    };
+
+    document.addEventListener('keydown', handleGlobalKeyDown);
+    return () => document.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [handleSave, handleSend]);
+
   return (
-    <div className="url-bar" onKeyDown={(e) => { handleKeyDown(e); handleSaveKeyDown(e); }}>
+    <div className="url-bar">
       <select
         className="method-select"
         value={request.method}
@@ -96,7 +105,7 @@ export function UrlBar() {
         value={request.url}
         onChange={(e) => setRequest({ url: e.target.value })}
         onKeyDown={(e) => {
-          if (e.key === 'Enter') handleSend();
+          if (e.key === 'Enter' && !e.metaKey && !e.ctrlKey) handleSend();
         }}
       />
       <button

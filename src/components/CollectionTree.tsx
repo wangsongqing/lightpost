@@ -299,7 +299,7 @@ function TreeNode({
 }) {
   const { items, activeItemId, expandedFolders, setActiveItem, toggleFolder, updateItem } =
     useCollectionStore();
-  const { setRequest } = useStore();
+  const { openRequestFromCollection } = useStore();
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(item.title);
 
@@ -347,7 +347,7 @@ function TreeNode({
           bodyType: (item.body_type as RequestData['bodyType']) || 'none',
           bodyContent: item.body_content || '',
         };
-        setRequest(newRequest);
+        openRequestFromCollection(item.id, item.title, newRequest);
       }
     }
   };
@@ -675,6 +675,10 @@ export function CollectionTree() {
         }}
         onDelete={(item) => {
           deleteItem(item.id);
+          // 如果该请求有打开的标签页，一并关闭
+          const { openRequests, closeRequest } = useStore.getState();
+          const openTab = openRequests.find((r) => r.collectionItemId === item.id);
+          if (openTab) closeRequest(openTab.id);
         }}
       />
 

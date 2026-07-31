@@ -69,6 +69,122 @@
   display: inline-block;
 }
 
+/* Request tabs */
+.request-tabs {
+  display: flex;
+  align-items: stretch;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.tabs-scroll {
+  display: flex;
+  align-items: stretch;
+  overflow-x: auto;
+  flex: 1;
+  min-width: 0;
+}
+
+.tabs-scroll::-webkit-scrollbar {
+  height: 0;
+}
+
+.request-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: var(--text-muted);
+  background: transparent;
+  border-right: 1px solid var(--border);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  max-width: 200px;
+  transition: background 0.1s, color 0.1s;
+}
+
+.request-tab:hover {
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+}
+
+.request-tab.active {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  border-bottom: 2px solid var(--accent);
+}
+
+.tab-method {
+  font-weight: 700;
+  font-size: 10px;
+  flex-shrink: 0;
+}
+
+.tab-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex: 1;
+}
+
+.tab-dirty-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--warning);
+  flex-shrink: 0;
+  box-shadow: 0 0 4px var(--warning);
+}
+
+.tab-close {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: var(--text-muted);
+  background: transparent;
+  border-radius: 3px;
+  padding: 0;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+
+.request-tab:hover .tab-close {
+  opacity: 1;
+}
+
+.tab-close:hover {
+  background: var(--bg-active);
+  color: var(--text-primary);
+}
+
+.tab-add-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  font-size: 16px;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.tab-add-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
 /* Main content */
 .main-content {
   display: flex;

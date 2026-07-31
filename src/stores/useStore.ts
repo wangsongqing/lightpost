@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { RequestState, RequestData, Environment, HistoryItem, ResponseData } from '../types';
+import type { RequestState, RequestData, OpenRequest, Environment, HistoryItem, ResponseData } from '../types';
 import { generateId } from '../utils/request';
 import {
   dbCollectionList,
@@ -31,6 +31,19 @@ const defaultRequest: RequestData = {
   bodyContent: '',
 };
 
+function createOpenRequest(title: string, request?: Partial<RequestData>, collectionItemId?: string): OpenRequest {
+  return {
+    id: generateId(),
+    title,
+    collectionItemId: collectionItemId ?? null,
+    request: { ...defaultRequest, ...request },
+    savedRequest: null,
+    isDirty: false,
+    response: null,
+    loading: false,
+  };
+}
+
 // 初始化标志
 let dbInitialized = false;
 
@@ -39,107 +52,244 @@ async function ensureDbInitialized() {
   dbInitialized = true;
 }
 
-export const useStore = create<RequestState>((set, get) => ({
-  request: defaultRequest,
-  response: null,
-  loading: false,
-  environments: [],
-  activeEnvId: null,
-  history: [],
+export function getActiveRequest(state: RequestState): OpenRequest | null {
+  return state.openRequests.find((r) => r.id === state.activeRequestId) ?? null;
+}
 
-  // 从数据库加载所有数据
-  initFromDb: async () => {
-    await ensureDbInitialized();
+export const useStore = create<RequestState>((set, get) => {
+  // 初始化一个空白标签
+  const initialTab = createOpenRequest('Untitled');
 
-    try {
-      // 加载环境变量
-      const envRows = await dbEnvList();
-      const envs: Environment[] = [];
-      for (const row of envRows) {
-        const vars = await dbEnvGetVariables(row.id);
-        envs.push(envRowToEnvironment(row, vars.map(envVarRowToKeyValuePair)));
+  return {
+    openRequests: [initialTab],
+    activeRequestId: initialTab.id,
+    environments: [],
+    activeEnvId: null,
+    history: [],
+
+    // 从数据库加载所有数据
+    initFromDb: async () => {
+      await ensureDbInitialized();
+
+      try {
+        const envRows = await dbEnvList();
+        const envs: Environment[] = [];
+        for (const row of envRows) {
+          const vars = await dbEnvGetVariables(row.id);
+          envs.push(envRowToEnvironment(row, vars.map(envVarRowToKeyValuePair)));
+        }
+
+        const history = await dbHistoryList(100);
+
+        set({
+          environments: envs,
+          activeEnvId: envs[0]?.id || null,
+          history,
+        });
+      } catch (e) {
+        console.error('Failed to load from DB:', e);
+      }
+    },
+
+    // ============ 标签页操作 ============
+
+    openNewRequest: () => {
+      const tab = createOpenRequest('Untitled');
+      set((state) => ({
+        openRequests: [...state.openRequests, tab],
+        activeRequestId: tab.id,
+      }));
+      return tab.id;
+    },
+
+    openRequestFromCollection: (collectionItemId, title, request) => {
+      // 如果已经打开了这个 collection item，直接切换过去
+      const existing = get().openRequests.find((r) => r.collectionItemId === collectionItemId);
+      if (existing) {
+        set({ activeRequestId: existing.id });
+        return existing.id;
       }
 
-      // 加载历史记录
-      const history = await dbHistoryList(100);
+      // 如果当前活动标签是空白未修改的 Untitled，直接复用它
+      const active = getActiveRequest(get());
+      if (active && active.title === 'Untitled' && !active.isDirty && !active.request.url && !active.collectionItemId) {
+        const updatedTab: OpenRequest = {
+          ...active,
+          title,
+          collectionItemId,
+          request: { ...request },
+          savedRequest: { ...request },
+          isDirty: false,
+        };
+        set((state) => ({
+          openRequests: state.openRequests.map((r) => r.id === active.id ? updatedTab : r),
+        }));
+        return active.id;
+      }
 
-      set({
-        environments: envs,
-        activeEnvId: envs[0]?.id || null,
-        history,
+      const tab: OpenRequest = {
+        id: generateId(),
+        title,
+        collectionItemId,
+        request: { ...request },
+        savedRequest: { ...request },
+        isDirty: false,
+        response: null,
+        loading: false,
+      };
+      set((state) => ({
+        openRequests: [...state.openRequests, tab],
+        activeRequestId: tab.id,
+      }));
+      return tab.id;
+    },
+
+    closeRequest: (id) => {
+      const state = get();
+      const index = state.openRequests.findIndex((r) => r.id === id);
+      if (index === -1) return;
+
+      const newRequests = state.openRequests.filter((r) => r.id !== id);
+
+      if (newRequests.length === 0) {
+        const freshTab = createOpenRequest('Untitled');
+        set({ openRequests: [freshTab], activeRequestId: freshTab.id });
+        return;
+      }
+
+      let newActiveId = state.activeRequestId;
+      if (state.activeRequestId === id) {
+        const newIndex = Math.min(index, newRequests.length - 1);
+        newActiveId = newRequests[newIndex].id;
+      }
+
+      set({ openRequests: newRequests, activeRequestId: newActiveId });
+    },
+
+    setActiveRequestId: (id) => {
+      set({ activeRequestId: id });
+    },
+
+    updateTabTitle: (id, title) => {
+      set((state) => ({
+        openRequests: state.openRequests.map((r) =>
+          r.id === id ? { ...r, title } : r
+        ),
+      }));
+    },
+
+    // ============ 当前请求操作 ============
+
+    setRequest: (partial) => {
+      set((state) => {
+        const activeId = state.activeRequestId;
+        return {
+          openRequests: state.openRequests.map((r) => {
+            if (r.id !== activeId) return r;
+            const newRequest = { ...r.request, ...partial };
+            const isDirty = r.savedRequest !== null
+              ? JSON.stringify(newRequest) !== JSON.stringify(r.savedRequest)
+              : JSON.stringify(newRequest) !== JSON.stringify(defaultRequest);
+            return { ...r, request: newRequest, isDirty };
+          }),
+        };
       });
-    } catch (e) {
-      console.error('Failed to load from DB:', e);
-    }
-  },
+    },
 
-  setRequest: (partial) => {
-    const newRequest = { ...get().request, ...partial };
-    set({ request: newRequest });
-  },
+    markSaved: () => {
+      set((state) => {
+        const activeId = state.activeRequestId;
+        return {
+          openRequests: state.openRequests.map((r) => {
+            if (r.id !== activeId) return r;
+            return { ...r, savedRequest: { ...r.request }, isDirty: false };
+          }),
+        };
+      });
+    },
 
-  setResponse: (response: ResponseData | null) => set({ response }),
-  setLoading: (loading: boolean) => set({ loading }),
+    setResponse: (response) => {
+      set((state) => {
+        const activeId = state.activeRequestId;
+        return {
+          openRequests: state.openRequests.map((r) =>
+            r.id === activeId ? { ...r, response } : r
+          ),
+        };
+      });
+    },
 
-  // ============ 环境变量 ============
+    setLoading: (loading) => {
+      set((state) => {
+        const activeId = state.activeRequestId;
+        return {
+          openRequests: state.openRequests.map((r) =>
+            r.id === activeId ? { ...r, loading } : r
+          ),
+        };
+      });
+    },
 
-  addEnvironment: async (env: Environment) => {
-    const row = await dbEnvAdd(env.name);
-    const newEnv: Environment = { ...env, id: row.id };
-    set((state) => ({ environments: [...state.environments, newEnv] }));
-  },
+    // ============ 环境变量 ============
 
-  updateEnvironment: async (id: string, partial: Partial<Environment>) => {
-    if (partial.name) {
-      await dbEnvUpdate(id, partial.name);
-    }
-    if (partial.variables) {
-      const vars = partial.variables.map((v) => keyValuePairToEnvVarRow(v, id));
-      await dbEnvSaveVariables(id, vars);
-    }
-    set((state) => ({
-      environments: state.environments.map((e) =>
-        e.id === id ? { ...e, ...partial } : e
-      ),
-    }));
-  },
+    addEnvironment: async (env: Environment) => {
+      const row = await dbEnvAdd(env.name);
+      const newEnv: Environment = { ...env, id: row.id };
+      set((state) => ({ environments: [...state.environments, newEnv] }));
+    },
 
-  removeEnvironment: async (id: string) => {
-    await dbEnvDelete(id);
-    set((state) => {
-      const envs = state.environments.filter((e) => e.id !== id);
-      const activeId = state.activeEnvId === id
-        ? (envs[0]?.id || null)
-        : state.activeEnvId;
-      return { environments: envs, activeEnvId: activeId };
-    });
-  },
+    updateEnvironment: async (id: string, partial: Partial<Environment>) => {
+      if (partial.name) {
+        await dbEnvUpdate(id, partial.name);
+      }
+      if (partial.variables) {
+        const vars = partial.variables.map((v) => keyValuePairToEnvVarRow(v, id));
+        await dbEnvSaveVariables(id, vars);
+      }
+      set((state) => ({
+        environments: state.environments.map((e) =>
+          e.id === id ? { ...e, ...partial } : e
+        ),
+      }));
+    },
 
-  setActiveEnvId: (id: string | null) => {
-    set({ activeEnvId: id });
-  },
+    removeEnvironment: async (id: string) => {
+      await dbEnvDelete(id);
+      set((state) => {
+        const envs = state.environments.filter((e) => e.id !== id);
+        const activeId = state.activeEnvId === id
+          ? (envs[0]?.id || null)
+          : state.activeEnvId;
+        return { environments: envs, activeEnvId: activeId };
+      });
+    },
 
-  // ============ 历史记录 ============
+    setActiveEnvId: (id: string | null) => {
+      set({ activeEnvId: id });
+    },
 
-  addHistory: async (item: HistoryItem) => {
-    await dbHistoryAdd(item.method, item.url, item.status, item.time);
-    set((state) => ({
-      history: [item, ...state.history.filter((h) => h.id !== item.id)].slice(0, 100),
-    }));
-  },
+    // ============ 历史记录 ============
 
-  removeHistory: async (id: string) => {
-    await dbHistoryDelete(id);
-    set((state) => ({
-      history: state.history.filter((h) => h.id !== id),
-    }));
-  },
+    addHistory: async (item: HistoryItem) => {
+      await dbHistoryAdd(item.method, item.url, item.status, item.time);
+      set((state) => ({
+        history: [item, ...state.history.filter((h) => h.id !== item.id)].slice(0, 100),
+      }));
+    },
 
-  clearHistory: async () => {
-    await dbHistoryClear();
-    set({ history: [] });
-  },
-}));
+    removeHistory: async (id: string) => {
+      await dbHistoryDelete(id);
+      set((state) => ({
+        history: state.history.filter((h) => h.id !== id),
+      }));
+    },
+
+    clearHistory: async () => {
+      await dbHistoryClear();
+      set({ history: [] });
+    },
+  };
+});
 
 // ============ Collection Store ============
 
@@ -248,7 +398,11 @@ export const useCollectionStore = create<CollectionState>((set, get) => ({
     const { activeItemId } = get();
     if (!activeItemId) return;
 
-    const { request } = useStore.getState();
+    const mainState = useStore.getState();
+    const activeTab = mainState.openRequests.find((r) => r.id === mainState.activeRequestId);
+    if (!activeTab) return;
+
+    const request = activeTab.request;
     await dbCollectionUpdate(activeItemId, {
       method: request.method,
       url: request.url,
@@ -258,6 +412,7 @@ export const useCollectionStore = create<CollectionState>((set, get) => ({
       bodyContent: request.bodyContent,
     });
 
+    // 更新 collection items
     set((state) => ({
       items: state.items.map((item) =>
         item.id === activeItemId
@@ -271,6 +426,13 @@ export const useCollectionStore = create<CollectionState>((set, get) => ({
               body_content: request.bodyContent,
             }
           : item
+      ),
+    }));
+
+    // 更新 main store 的 openRequests（标记为已保存）
+    useStore.setState((state) => ({
+      openRequests: state.openRequests.map((r) =>
+        r.id === state.activeRequestId ? { ...r, savedRequest: { ...request }, isDirty: false } : r
       ),
     }));
   },

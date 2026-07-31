@@ -18,10 +18,11 @@ function formatUrl(url: string, maxLen: number = 40): string {
 }
 
 export function HistorySidebar({ onClose }: { onClose: () => void }) {
-  const { history, removeHistory, clearHistory, setRequest } = useStore();
+  const { history, removeHistory, clearHistory, openNewRequest, setRequest } = useStore();
 
   const handleClick = (item: HistoryItem) => {
     // 这里只能恢复 URL 和方法，完整恢复需要额外存储
+    const tabId = openNewRequest();
     setRequest({ method: item.method, url: item.url });
     onClose();
   };
