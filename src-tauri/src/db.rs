@@ -12,26 +12,35 @@ pub struct Database {
 
 impl Database {
     pub fn new(handle: &AppHandle) -> Result<Self, String> {
-        // 数据库放在项目根目录下 (PostWeb/lightpost/)
-        // 通过可执行文件位置推导：target/debug/lightpost -> 上溯3层到项目根
-        let exe_path = std::env::current_exe()
-            .map_err(|e| format!("Failed to get exe path: {}", e))?;
-
-        // 开发模式: src-tauri/target/debug/lightpost
-        // 向上4层: debug -> target -> src-tauri -> lightpost(项目根)
-        let project_dir = exe_path
-            .parent() // debug
-            .and_then(|p| p.parent()) // target
-            .and_then(|p| p.parent()) // src-tauri
-            .and_then(|p| p.parent()) // lightpost/
-            .unwrap_or_else(|| std::path::Path::new("."));
-
-        let db_path = project_dir.join("lightpost.db");
+        // 使用 Tauri 的标准应用数据目录
+        // 开发模式: src-tauri/target/debug/lightpost → 上溯4层到项目根目录
+        // 安装后:   ~/Library/Application Support/com.lightpost.app/ (macOS)
+        //           %APPDATA%\com.lightpost.app\ (Windows)
+        //           ~/.local/share/com.lightpost.app/ (Linux)
+        let db_path = if cfg!(debug_assertions) {
+            // 开发模式：放在项目根目录
+            let exe_path = std::env::current_exe()
+                .map_err(|e| format!("Failed to get exe path: {}", e))?;
+            let project_dir = exe_path
+                .parent() // debug
+                .and_then(|p| p.parent()) // target
+                .and_then(|p| p.parent()) // src-tauri
+                .and_then(|p| p.parent()) // lightpost/
+                .unwrap_or_else(|| std::path::Path::new("."));
+            project_dir.join("lightpost.db")
+        } else {
+            // 生产模式：使用标准应用数据目录
+            let app_data_dir = handle
+                .path()
+                .app_data_dir()
+                .map_err(|e| format!("Failed to get app data dir: {}", e))?;
+            std::fs::create_dir_all(&app_data_dir)
+                .map_err(|e| format!("Failed to create app data dir: {}", e))?;
+            app_data_dir.join("lightpost.db")
+        };
 
         let conn = Connection::open(&db_path)
             .map_err(|e| format!("Failed to open database at {:?}: {}", db_path, e))?;
-        let conn = Connection::open(&db_path)
-            .map_err(|e| format!("Failed to open database: {}", e))?;
 
         // Enable foreign keys
         conn.execute("PRAGMA foreign_keys = ON", [])

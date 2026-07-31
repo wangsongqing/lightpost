@@ -53,9 +53,16 @@ export interface PostmanCollection {
   item: PostmanItem[];
 }
 
+// 将 Postman 变量语法 <<xxx>> 转换为 {{xxx}}
+function convertVariables(text: string | undefined | null): string {
+  if (!text) return '';
+  return text.replace(/<<([^>]+)>>/g, '{{$1}}');
+}
+
 // 解析 URL，提取 query 参数
 function parseUrl(raw: string): { url: string; params: { key: string; value: string; enabled: boolean }[] } {
-  // 处理 Postman 变量语法 {{var}} 和 <<var>>
+  // 将 Postman 变量语法 <<xxx>> 转换为 {{xxx}}
+  raw = convertVariables(raw);
   // 查找 ? 分隔符
   const queryStart = raw.indexOf('?');
   if (queryStart === -1) {
@@ -91,7 +98,7 @@ function convertBody(body: PostmanBody | null | undefined): { bodyType: string; 
       const lang = body.options?.raw?.language;
       return {
         bodyType: lang === 'json' ? 'json' : 'raw',
-        bodyContent: body.raw || '',
+        bodyContent: convertVariables(body.raw || ''),
       };
     case 'formdata':
       return {
@@ -99,7 +106,7 @@ function convertBody(body: PostmanBody | null | undefined): { bodyType: string; 
         bodyContent: JSON.stringify(
           (body.formdata || [])
             .filter((f) => !f.disabled)
-            .map((f) => ({ key: f.key, value: f.value, type: f.type || 'text' }))
+            .map((f) => ({ key: f.key, value: convertVariables(f.value), type: f.type || 'text' }))
         ),
       };
     case 'urlencoded':
@@ -108,7 +115,7 @@ function convertBody(body: PostmanBody | null | undefined): { bodyType: string; 
         bodyContent: JSON.stringify(
           (body.urlencoded || [])
             .filter((f) => !f.disabled)
-            .map((f) => ({ key: f.key, value: f.value }))
+            .map((f) => ({ key: f.key, value: convertVariables(f.value) }))
         ),
       };
     default:
@@ -121,7 +128,7 @@ function convertAuth(auth: PostmanAuth | null | undefined): { key: string; value
   if (!auth || auth.type !== 'bearer' || !auth.bearer) return [];
   const token = auth.bearer.find((b) => b.key === 'token');
   if (!token?.value) return [];
-  return [{ key: 'Authorization', value: `Bearer ${token.value}`, enabled: true }];
+  return [{ key: 'Authorization', value: convertVariables(`Bearer ${token.value}`), enabled: true }];
 }
 
 // 获取原始 URL 字符串
@@ -144,6 +151,7 @@ export async function importPostmanCollection(
   addFolder: (parentId: string | null, title: string) => Promise<CollectionItem>,
   addRequest: (parentId: string | null, title: string, method?: string, url?: string) => Promise<CollectionItem>,
   updateItem: (id: string, updates: Partial<CollectionItem>) => Promise<void>,
+  targetParentId: string | null = null,
 ): Promise<ImportResult> {
   let folderCount = 0;
   let requestCount = 0;
@@ -166,7 +174,7 @@ export async function importPostmanCollection(
         const headers = [
           ...(req.header || []).filter((h) => !h.disabled && h.key).map((h) => ({
             key: h.key,
-            value: h.value,
+            value: convertVariables(h.value),
             enabled: true,
           })),
           ...convertAuth(req.auth),
@@ -186,7 +194,7 @@ export async function importPostmanCollection(
     }
   }
 
-  await processItems(collection.item, null);
+  await processItems(collection.item, targetParentId);
 
   return { folderCount, requestCount };
 }

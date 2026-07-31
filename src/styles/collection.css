@@ -45,6 +45,23 @@
   background: var(--bg-hover);
 }
 
+/* Import target badge */
+.import-target-badge {
+  width: auto !important;
+  padding: 0 8px !important;
+  font-size: 11px !important;
+  background: rgba(137, 180, 250, 0.12) !important;
+  border: 1px solid rgba(137, 180, 250, 0.3);
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.import-target-badge:hover {
+  background: rgba(137, 180, 250, 0.2) !important;
+}
+
 .collection-list {
   flex: 1;
   overflow: auto;

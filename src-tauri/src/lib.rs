@@ -172,6 +172,7 @@ fn history_delete(state: tauri::State<Database>, id: String) -> Result<(), Strin
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_http::init())
         .setup(|app| {
             let handle = app.handle();
             let db = Database::new(handle)?;

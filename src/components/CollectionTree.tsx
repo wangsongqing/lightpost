@@ -19,6 +19,7 @@ function ContextMenu({
   onClose,
   onAddFolder,
   onAddRequest,
+  onImportTo,
   onRename,
   onDelete,
 }: {
@@ -26,6 +27,7 @@ function ContextMenu({
   onClose: () => void;
   onAddFolder: (parentId: string | null) => void;
   onAddRequest: (parentId: string | null) => void;
+  onImportTo: (parentId: string | null) => void;
   onRename: (item: CollectionItem) => void;
   onDelete: (item: CollectionItem) => void;
 }) {
@@ -112,6 +114,16 @@ function ContextMenu({
               <span className="menu-icon">➕</span>
               <span>新建子请求</span>
             </div>
+            <div
+              className="context-menu-item"
+              onClick={() => {
+                onImportTo(parentId);
+                onClose();
+              }}
+            >
+              <span className="menu-icon">📥</span>
+              <span>导入到此文件夹</span>
+            </div>
             <div className="context-menu-divider" />
           </>
         )}
@@ -138,6 +150,16 @@ function ContextMenu({
             >
               <span className="menu-icon">➕</span>
               <span>新建请求</span>
+            </div>
+            <div
+              className="context-menu-item"
+              onClick={() => {
+                onImportTo(null);
+                onClose();
+              }}
+            >
+              <span className="menu-icon">📥</span>
+              <span>导入到根目录</span>
             </div>
             <div className="context-menu-divider" />
           </>
@@ -433,7 +455,7 @@ function TreeNode({
 // ============ 主组件 ============
 
 export function CollectionTree() {
-  const { items, loadCollection, addFolder, addRequest, deleteItem, updateItem } =
+  const { items, loadCollection, addFolder, addRequest, deleteItem, updateItem, toggleFolder } =
     useCollectionStore();
 
   const [contextMenu, setContextMenu] = useState<ContextMenuState>({
@@ -447,6 +469,7 @@ export function CollectionTree() {
   const [newParentId, setNewParentId] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
   const [importMsg, setImportMsg] = useState<string | null>(null);
+  const [importTargetId, setImportTargetId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 导出集合
@@ -465,6 +488,11 @@ export function CollectionTree() {
   const handleImportClick = () => {
     fileInputRef.current?.click();
   };
+
+  // 获取导入目标文件夹名称
+  const importTargetName = importTargetId
+    ? items.find((i) => i.id === importTargetId)?.title || '未知文件夹'
+    : '根目录';
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -486,12 +514,18 @@ export function CollectionTree() {
         addFolder,
         addRequest,
         updateItem,
+        importTargetId,
       );
 
       // 重新加载目录树
       await loadCollection();
 
-      setImportMsg(`导入成功：${result.folderCount} 个文件夹，${result.requestCount} 个请求`);
+      // 如果导入到子文件夹，自动展开该文件夹
+      if (importTargetId) {
+        toggleFolder(importTargetId);
+      }
+
+      setImportMsg(`导入成功：${result.folderCount} 个文件夹，${result.requestCount} 个请求 → ${importTargetName}`);
       setTimeout(() => setImportMsg(null), 4000);
     } catch (err) {
       console.error('Import failed:', err);
@@ -542,12 +576,21 @@ export function CollectionTree() {
           </button>
           <button
             className="collection-action-btn"
-            title="导入 Postman 集合"
+            title={`导入 Postman 集合到: ${importTargetName}`}
             onClick={handleImportClick}
             disabled={importing}
           >
             {importing ? '⏳' : '📥'}
           </button>
+          {importTargetId && (
+            <button
+              className="collection-action-btn import-target-badge"
+              title="点击取消目标文件夹"
+              onClick={() => setImportTargetId(null)}
+            >
+              📂{importTargetName}
+            </button>
+          )}
           <button
             className="collection-action-btn"
             title="新建文件夹"
@@ -620,6 +663,11 @@ export function CollectionTree() {
           setNewParentId(parentId);
           setNewType('request');
           setShowNew(true);
+        }}
+        onImportTo={(parentId) => {
+          setImportTargetId(parentId);
+          setImportMsg(`已设置导入目标: ${parentId ? items.find((i) => i.id === parentId)?.title || '未知文件夹' : '根目录'}`);
+          setTimeout(() => setImportMsg(null), 3000);
         }}
         onRename={(item) => {
           const event = new CustomEvent('tree-rename', { detail: item.id });

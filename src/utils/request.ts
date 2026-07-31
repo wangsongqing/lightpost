@@ -1,3 +1,4 @@
+import { fetch as tauriFetch } from '@tauri-apps/plugin-http';
 import type { RequestData, ResponseData, KeyValuePair, Environment } from '../types';
 
 function generateId(): string {
@@ -91,11 +92,26 @@ export async function sendRequest(request: RequestData, env?: Environment): Prom
 
   const startTime = performance.now();
 
-  const response = await fetch(url, {
-    method: request.method,
-    headers,
-    body: methodWithBody(request.method) ? body : undefined,
-  });
+  let response: Response;
+  try {
+    response = await tauriFetch(url, {
+      method: request.method,
+      headers,
+      body: methodWithBody(request.method) ? body : undefined,
+    });
+  } catch (err) {
+    const endTime = performance.now();
+    const time = Math.round(endTime - startTime);
+    const errMsg = err instanceof Error ? err.message : String(err);
+    return {
+      status: 0,
+      statusText: `Network Error: ${errMsg}`,
+      headers: {},
+      body: `请求失败: ${errMsg}\n\nURL: ${url}`,
+      time,
+      size: 0,
+    };
+  }
 
   const endTime = performance.now();
   const time = Math.round(endTime - startTime);
