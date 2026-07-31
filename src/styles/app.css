@@ -82,6 +82,19 @@
   overflow: hidden;
 }
 
+.content-area {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
+.panes-row {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
 .request-pane {
   flex: 1;
   border-right: 1px solid var(--border);
@@ -103,7 +116,7 @@
 .url-bar {
   display: flex;
   gap: 8px;
-  padding: 12px;
+  padding: 12px 0 12px 12px;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
@@ -146,6 +159,7 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
+  margin-left: auto;
 }
 
 /* Tab content */

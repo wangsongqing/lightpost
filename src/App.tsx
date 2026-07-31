@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { RequestBuilder } from './components/RequestBuilder';
 import { ResponseViewer } from './components/ResponseViewer';
+import { UrlBar } from './components/UrlBar';
 import { EnvironmentPanel } from './components/EnvironmentPanel';
 import { HistorySidebar } from './components/HistorySidebar';
 import { CollectionTree } from './components/CollectionTree';
@@ -104,12 +105,17 @@ function App() {
           onMouseDown={handleMouseDown}
         />
 
-        {/* Request & Response panes */}
-        <div className="pane request-pane">
-          <RequestBuilder />
-        </div>
-        <div className="pane response-pane">
-          <ResponseViewer />
+        {/* Right side: URL bar on top, then request/response split */}
+        <div className="content-area">
+          <UrlBar />
+          <div className="panes-row">
+            <div className="pane request-pane">
+              <RequestBuilder />
+            </div>
+            <div className="pane response-pane">
+              <ResponseViewer />
+            </div>
+          </div>
         </div>
       </main>
 
