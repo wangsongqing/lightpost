@@ -233,55 +233,60 @@ impl Database {
         let db = self.db();
         let now = Self::now();
 
-        let mut sets = vec!["updated_at = ?1"];
-        let mut cols: Vec<&str> = vec![];
-        let mut vals: Vec<String> = vec![now.to_string()];
+        let mut sets: Vec<String> = vec![];
+        let mut vals: Vec<String> = vec![];
 
         if let Some(t) = &title {
-            cols.push("title = ?");
+            sets.push("title = ?".to_string());
             vals.push(t.clone());
         }
         if let Some(m) = &method {
-            cols.push("method = ?");
+            sets.push("method = ?".to_string());
             vals.push(m.clone());
         }
         if let Some(u) = &url {
-            cols.push("url = ?");
+            sets.push("url = ?".to_string());
             vals.push(u.clone());
         }
         if let Some(p) = &params {
-            cols.push("params = ?");
+            sets.push("params = ?".to_string());
             vals.push(p.clone());
         }
         if let Some(h) = &headers {
-            cols.push("headers = ?");
+            sets.push("headers = ?".to_string());
             vals.push(h.clone());
         }
         if let Some(bt) = &body_type {
-            cols.push("body_type = ?");
+            sets.push("body_type = ?".to_string());
             vals.push(bt.clone());
         }
         if let Some(bc) = &body_content {
-            cols.push("body_content = ?");
+            sets.push("body_content = ?".to_string());
             vals.push(bc.clone());
         }
 
-        if cols.is_empty() {
+        if sets.is_empty() {
             return Ok(());
         }
 
+        // Always update updated_at
+        sets.push("updated_at = ?".to_string());
+        vals.push(now.to_string());
+
+        // id for WHERE clause
+        vals.push(id);
+
         let query = format!(
             "UPDATE collection_items SET {} WHERE id = ?",
-            cols.join(", ")
+            sets.join(", ")
         );
 
-        let mut params: Vec<&dyn rusqlite::ToSql> = vec![&now];
-        for v in &vals[1..] {
-            params.push(v);
+        let mut param_refs: Vec<&dyn rusqlite::ToSql> = vec![];
+        for v in &vals {
+            param_refs.push(v);
         }
-        params.push(&id);
 
-        db.execute(&query, &*params)
+        db.execute(&query, &*param_refs)
             .map_err(|e| e.to_string())?;
 
         Ok(())

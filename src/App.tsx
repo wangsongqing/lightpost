@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { RequestBuilder } from './components/RequestBuilder';
 import { ResponseViewer } from './components/ResponseViewer';
 import { EnvironmentPanel } from './components/EnvironmentPanel';
@@ -12,12 +12,44 @@ function App() {
   const { environments, activeEnvId, initFromDb } = useStore();
   const [showEnv, setShowEnv] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(280);
+  const isDragging = useRef(false);
+  const startX = useRef(0);
+  const startWidth = useRef(0);
 
   useEffect(() => {
     initFromDb();
   }, [initFromDb]);
 
   const activeEnv = environments.find((e) => e.id === activeEnvId);
+
+  // 拖拽调整侧边栏宽度
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    isDragging.current = true;
+    startX.current = e.clientX;
+    startWidth.current = sidebarWidth;
+    e.preventDefault();
+  }, [sidebarWidth]);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging.current) return;
+      const delta = e.clientX - startX.current;
+      const newWidth = Math.max(200, Math.min(600, startWidth.current + delta));
+      setSidebarWidth(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      isDragging.current = false;
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, []);
 
   return (
     <div className="app">
@@ -62,9 +94,15 @@ function App() {
       {/* Main content */}
       <main className="main-content">
         {/* Left sidebar - Collection tree */}
-        <div className="collection-sidebar">
+        <div className="collection-sidebar" style={{ width: sidebarWidth }}>
           <CollectionTree />
         </div>
+
+        {/* 拖拽分隔条 */}
+        <div
+          className="sidebar-resizer"
+          onMouseDown={handleMouseDown}
+        />
 
         {/* Request & Response panes */}
         <div className="pane request-pane">

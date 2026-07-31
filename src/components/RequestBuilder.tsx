@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { useStore } from '../stores/useStore';
+import { useStore, useCollectionStore } from '../stores/useStore';
 import { sendRequest, generateId } from '../utils/request';
 import type { HttpMethod, BodyType, KeyValuePair } from '../types';
 import { KeyValueEditor } from './KeyValueEditor';
@@ -15,7 +15,30 @@ const BODY_TYPES: { value: BodyType; label: string }[] = [
 
 export function RequestBuilder() {
   const { request, setRequest, setResponse, setLoading, loading, environments, activeEnvId, addHistory } = useStore();
+  const { activeItemId, saveCurrentRequest } = useCollectionStore();
   const [activeTab, setActiveTab] = useState<'params' | 'headers' | 'body'>('headers');
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = useCallback(async () => {
+    if (!activeItemId) return;
+    setSaving(true);
+    try {
+      await saveCurrentRequest();
+    } finally {
+      setSaving(false);
+    }
+  }, [activeItemId, saveCurrentRequest]);
+
+  // Ctrl+S / Cmd+S 保存
+  const handleSaveKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+        e.preventDefault();
+        handleSave();
+      }
+    },
+    [handleSave],
+  );
 
   const activeEnv = environments.find((e) => e.id === activeEnvId);
 
@@ -68,7 +91,7 @@ export function RequestBuilder() {
   const updateHeaders = (headers: KeyValuePair[]) => setRequest({ headers });
 
   return (
-    <div className="request-builder" onKeyDown={handleKeyDown}>
+    <div className="request-builder" onKeyDown={(e) => { handleKeyDown(e); handleSaveKeyDown(e); }}>
       {/* URL Bar */}
       <div className="url-bar">
         <select
@@ -90,6 +113,14 @@ export function RequestBuilder() {
             if (e.key === 'Enter') handleSend();
           }}
         />
+        <button
+          className="save-btn"
+          onClick={handleSave}
+          disabled={!activeItemId || saving}
+          title={activeItemId ? '保存到请求 (Ctrl+S)' : '请先选中一个请求'}
+        >
+          {saving ? <span className="spinner" /> : '💾'}
+        </button>
         <button
           className="primary send-btn"
           onClick={handleSend}

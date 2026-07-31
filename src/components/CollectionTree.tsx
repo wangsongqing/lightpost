@@ -2,6 +2,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useCollectionStore, useStore } from '../stores/useStore';
 import type { CollectionItem } from '../utils/db';
 import type { RequestData } from '../types';
+import { importPostmanCollection, type PostmanCollection } from '../utils/postmanImport';
+import { exportToPostman, downloadJson } from '../utils/postmanExport';
 
 // ============ 上下文菜单 ============
 
@@ -147,8 +149,10 @@ function ContextMenu({
             <div
               className="context-menu-item"
               onClick={() => {
-                onRename(state.target!);
+                const item = state.target!;
                 onClose();
+                // 延迟触发，等菜单关闭后再激活输入框，避免 mousedown 导致输入框失焦
+                setTimeout(() => onRename(item), 50);
               }}
             >
               <span className="menu-icon">✏️</span>
@@ -333,8 +337,9 @@ function TreeNode({
   };
 
   const submitRename = () => {
-    if (editTitle.trim()) {
-      updateItem(item.id, { title: editTitle.trim() });
+    const newTitle = editTitle.trim();
+    if (newTitle && newTitle !== item.title) {
+      updateItem(item.id, { title: newTitle });
     }
     setEditing(false);
   };
@@ -428,7 +433,7 @@ function TreeNode({
 // ============ 主组件 ============
 
 export function CollectionTree() {
-  const { items, loadCollection, addFolder, addRequest, deleteItem } =
+  const { items, loadCollection, addFolder, addRequest, deleteItem, updateItem } =
     useCollectionStore();
 
   const [contextMenu, setContextMenu] = useState<ContextMenuState>({
@@ -440,10 +445,63 @@ export function CollectionTree() {
   const [showNew, setShowNew] = useState(false);
   const [newType, setNewType] = useState<'folder' | 'request'>('request');
   const [newParentId, setNewParentId] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [importMsg, setImportMsg] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // 导出集合
+  const handleExport = () => {
+    const collection = exportToPostman(items, 'ERP');
+    downloadJson(collection, 'ERP.postman_collection.json');
+    setImportMsg('导出成功！');
+    setTimeout(() => setImportMsg(null), 3000);
+  };
 
   useEffect(() => {
     loadCollection();
   }, [loadCollection]);
+
+  // 导入 Postman 集合
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImporting(true);
+    setImportMsg(null);
+
+    try {
+      const text = await file.text();
+      const collection = JSON.parse(text) as PostmanCollection;
+
+      if (!collection.item || !Array.isArray(collection.item)) {
+        throw new Error('无效的 Postman 集合文件');
+      }
+
+      const result = await importPostmanCollection(
+        collection,
+        addFolder,
+        addRequest,
+        updateItem,
+      );
+
+      // 重新加载目录树
+      await loadCollection();
+
+      setImportMsg(`导入成功：${result.folderCount} 个文件夹，${result.requestCount} 个请求`);
+      setTimeout(() => setImportMsg(null), 4000);
+    } catch (err) {
+      console.error('Import failed:', err);
+      setImportMsg(`导入失败：${err instanceof Error ? err.message : '未知错误'}`);
+    } finally {
+      setImporting(false);
+      // 重置 input，允许重复导入同一文件
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
 
   const rootItems = items.filter((i) => i.parent_id === null);
 
@@ -477,6 +535,21 @@ export function CollectionTree() {
         <div className="collection-actions">
           <button
             className="collection-action-btn"
+            title="导出 Postman 集合"
+            onClick={handleExport}
+          >
+            📤
+          </button>
+          <button
+            className="collection-action-btn"
+            title="导入 Postman 集合"
+            onClick={handleImportClick}
+            disabled={importing}
+          >
+            {importing ? '⏳' : '📥'}
+          </button>
+          <button
+            className="collection-action-btn"
             title="新建文件夹"
             onClick={() => {
               setNewParentId(null);
@@ -499,6 +572,20 @@ export function CollectionTree() {
           </button>
         </div>
       </div>
+
+      {/* 导入结果提示 */}
+      {importMsg && (
+        <div className="import-msg">{importMsg}</div>
+      )}
+
+      {/* 隐藏的文件 input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".json"
+        style={{ display: 'none' }}
+        onChange={handleFileChange}
+      />
 
       <div
         className="collection-list"

@@ -295,16 +295,38 @@ button.danger:hover {
   opacity: 0.9;
 }
 
+/* Import message */
+.import-msg {
+  padding: 8px 12px;
+  font-size: 11px;
+  color: var(--accent);
+  background: rgba(137, 180, 250, 0.08);
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+}
+
 /* Collection sidebar in main layout */
 .collection-sidebar {
-  width: 240px;
   min-width: 200px;
-  border-right: 1px solid var(--border);
   background: var(--bg-secondary);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   flex-shrink: 0;
+}
+
+/* Sidebar resizer */
+.sidebar-resizer {
+  width: 4px;
+  cursor: col-resize;
+  background: var(--border);
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.sidebar-resizer:hover,
+.sidebar-resizer:active {
+  background: var(--accent);
 }
 
 /* Responsive: collapse on small screens */
