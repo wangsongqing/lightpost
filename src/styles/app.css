@@ -46,7 +46,7 @@
   align-items: center;
   gap: 6px;
   padding: 5px 10px;
-  font-size: 12px;
+  font-size: 13px;
   background: var(--bg-input);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -96,7 +96,7 @@
   align-items: center;
   gap: 6px;
   padding: 6px 10px;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-muted);
   background: transparent;
   border-right: 1px solid var(--border);
@@ -120,7 +120,7 @@
 
 .tab-method {
   font-weight: 700;
-  font-size: 10px;
+  font-size: 11px;
   flex-shrink: 0;
 }
 
@@ -252,7 +252,7 @@
 .url-input {
   flex: 1;
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .save-btn {
@@ -296,7 +296,7 @@
   gap: 8px;
   padding: 4px 0;
   color: var(--text-muted);
-  font-size: 11px;
+  font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 4px;
@@ -324,7 +324,7 @@
 .kv-key, .kv-value {
   flex: 1;
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 13px;
   padding: 5px 8px;
 }
 
@@ -348,7 +348,7 @@
 .kv-add {
   margin-top: 8px;
   padding: 5px 12px;
-  font-size: 12px;
+  font-size: 13px;
   background: transparent;
   border: 1px dashed var(--border);
   color: var(--text-secondary);
@@ -379,7 +379,7 @@
 
 .body-type-btn {
   padding: 4px 10px;
-  font-size: 11px;
+  font-size: 12px;
   background: transparent;
   color: var(--text-secondary);
   border-radius: 4px;
@@ -402,6 +402,9 @@
   padding: 12px;
   background: transparent;
   min-height: 200px;
+  font-size: 16px;
+  font-family: var(--font-mono);
+  line-height: 1.6;
 }
 
 /* Response viewer */
@@ -434,7 +437,7 @@
 }
 
 .shortcut {
-  font-size: 12px;
+  font-size: 13px;
 }
 
 kbd {
@@ -443,7 +446,7 @@ kbd {
   border-radius: 3px;
   padding: 1px 5px;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .response-status-bar {
@@ -468,14 +471,14 @@ kbd {
 
 .status-text {
   color: var(--text-secondary);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .response-meta {
   display: flex;
   gap: 12px;
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .response-content {
@@ -499,7 +502,7 @@ kbd {
 
 .body-view-toggle button {
   padding: 3px 8px;
-  font-size: 11px;
+  font-size: 12px;
   background: transparent;
   color: var(--text-secondary);
 }
@@ -514,7 +517,7 @@ kbd {
   overflow: auto;
   padding: 12px;
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 15px;
   line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-all;
@@ -536,13 +539,13 @@ kbd {
   color: var(--text-secondary);
   min-width: 180px;
   flex-shrink: 0;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .header-value {
   color: var(--text-primary);
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 13px;
   word-break: break-all;
 }
 
@@ -613,7 +616,7 @@ kbd {
 }
 
 .clear-btn {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--error);
   background: transparent;
   padding: 4px 8px;
@@ -693,7 +696,7 @@ kbd {
 }
 
 .env-add-btn {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-secondary);
   background: transparent;
   width: 100%;
@@ -712,11 +715,11 @@ kbd {
 }
 
 .env-create input {
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .env-create button {
-  font-size: 12px;
+  font-size: 13px;
   padding: 4px 8px;
 }
 
@@ -736,7 +739,7 @@ kbd {
 }
 
 .env-hint {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-muted);
   font-family: var(--font-mono);
 }
@@ -753,7 +756,7 @@ kbd {
 }
 
 .empty-history .hint {
-  font-size: 12px;
+  font-size: 13px;
   margin-top: 8px;
 }
 
@@ -786,7 +789,7 @@ kbd {
 
 .history-url {
   color: var(--text-secondary);
-  font-size: 12px;
+  font-size: 13px;
   font-family: var(--font-mono);
   white-space: nowrap;
   overflow: hidden;
@@ -798,7 +801,7 @@ kbd {
   align-items: center;
   gap: 10px;
   flex-shrink: 0;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-muted);
 }
 
